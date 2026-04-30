@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
 
     const { error } = await supabase
       .from('tickets')
-      .update({ status, updated_at: new Date().toISOString() })
+      .update({ status })
       .eq('id', ticketId)
 
     if (error) throw error
