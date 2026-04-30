@@ -1,5 +1,3 @@
-// lib/whatsapp.ts
-
 const WA_TOKEN    = process.env.WHATSAPP_TOKEN!
 const WA_PHONE_ID = process.env.WHATSAPP_PHONE_ID!
 const BASE_URL    = `https://graph.facebook.com/v19.0/${WA_PHONE_ID}/messages`
@@ -17,12 +15,12 @@ export async function sendWhatsApp(phone: string, plate: string, event: string) 
 
   const text = template.replace(/\{\{plate\}\}/g, plate.toUpperCase())
 
-  // Normalizar teléfono (quitar +, espacios, guiones)
   const cleanPhone = phone.replace(/[\s\-\+]/g, '')
+  const finalPhone = cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`
 
   const body = {
     messaging_product: 'whatsapp',
-    to: cleanPhone,
+    to: finalPhone,
     type: 'text',
     text: { body: text },
   }
