@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:      { label: 'Sin iniciar',        color: 'bg-gray-100 text-gray-600' },
   in_progress:  { label: 'En progreso',         color: 'bg-blue-100 text-blue-700' },
   waiting_part: { label: 'Esperando repuesto',  color: 'bg-yellow-100 text-yellow-700' },
@@ -10,14 +10,33 @@ const STATUS_CONFIG = {
 }
 
 const ACTIONS = [
-  { next: 'in_progress',  label: '▶ Empecé a trabajar', style: 'bg-blue-600 hover:bg-blue-700 text-white' },
+  { next: 'in_progress',  label: '▶ Empecé a trabajar',    style: 'bg-blue-600 hover:bg-blue-700 text-white' },
   { next: 'waiting_part', label: '⏸ En espera de repuesto', style: 'bg-yellow-500 hover:bg-yellow-600 text-white' },
-  { next: 'done',         label: '✓ Listo', style: 'bg-green-600 hover:bg-green-700 text-white' },
+  { next: 'done',         label: '✓ Listo',                 style: 'bg-green-600 hover:bg-green-700 text-white' },
 ]
 
-export default function MechanicBoard({ tickets: initial, mechanic }: any) {
+interface Vehicle {
+  plate: string
+  model: string
+  owner_name: string
+  owner_phone: string
+}
+
+interface Ticket {
+  id: string
+  status: string
+  notes?: string
+  vehicles: Vehicle
+}
+
+interface Props {
+  tickets: Ticket[]
+  mechanic: { full_name: string } | null
+}
+
+export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
   const supabase = createClientComponentClient()
-  const [tickets, setTickets] = useState(initial)
+  const [tickets, setTickets] = useState<Ticket[]>(initial)
   const [loading, setLoading] = useState<string | null>(null)
 
   async function updateStatus(ticketId: string, newStatus: string, ownerPhone: string, plate: string) {
@@ -30,20 +49,18 @@ export default function MechanicBoard({ tickets: initial, mechanic }: any) {
 
       if (error) throw error
 
-      // Notificar por WhatsApp
       await fetch('/api/whatsapp/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone: ownerPhone, plate, status: newStatus }),
       })
 
-      // Actualizar UI: si está "done", remover de la lista
-      setTickets((prev: any[]) =>
+      setTickets(prev =>
         newStatus === 'done'
-          ? prev.filter((t: any) => t.id !== ticketId)
-          : prev.map((t: any) => t.id === ticketId ? { ...t, status: newStatus } : t)
+          ? prev.filter(t => t.id !== ticketId)
+          : prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t)
       )
-    } catch (err) {
+    } catch {
       alert('Error actualizando estado. Intenta de nuevo.')
     } finally {
       setLoading(null)
@@ -70,17 +87,16 @@ export default function MechanicBoard({ tickets: initial, mechanic }: any) {
       </header>
 
       <div className="space-y-4 max-w-lg mx-auto">
-        {tickets.map((ticket: any) => {
-          const statusCfg = STATUS_CONFIG[ticket.status as keyof typeof STATUS_CONFIG]
+        {tickets.map(ticket => {
+          const statusCfg = STATUS_CONFIG[ticket.status]
           const v = ticket.vehicles
 
           return (
             <div key={ticket.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-              {/* Cabecera del ticket */}
               <div className="flex items-center justify-between mb-3">
                 <span className="text-2xl font-bold tracking-widest text-gray-800">{v?.plate}</span>
-                <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusCfg.color}`}>
-                  {statusCfg.label}
+                <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusCfg?.color}`}>
+                  {statusCfg?.label}
                 </span>
               </div>
 
@@ -93,18 +109,13 @@ export default function MechanicBoard({ tickets: initial, mechanic }: any) {
                 </p>
               )}
 
-              {/* Botones de acción */}
               <div className="grid gap-2">
                 {ACTIONS.map(({ next, label, style }) => (
                   <button
                     key={next}
                     disabled={ticket.status === next || loading !== null}
                     onClick={() => updateStatus(ticket.id, next, v?.owner_phone, v?.plate)}
-                    className={`w-full py-3 rounded-xl font-semibold text-sm transition-all
-                      ${style}
-                      disabled:opacity-40 disabled:cursor-not-allowed
-                      ${loading === ticket.id + next ? 'opacity-60' : ''}
-                    `}
+                    className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${style} disabled:opacity-40 disabled:cursor-not-allowed`}
                   >
                     {loading === ticket.id + next ? 'Guardando...' : label}
                   </button>
