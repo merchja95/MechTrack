@@ -38,9 +38,9 @@ export default function LoginPage() {
         const profile = profiles?.[0]
 
         if (profile?.role === 'mechanic') {
-          router.push('/mechanic')
+          window.location.href = '/mechanic'
         } else {
-          router.push('/dashboard')
+          window.location.href = '/dashboard'
         }
       } else {
         router.push('/dashboard')
