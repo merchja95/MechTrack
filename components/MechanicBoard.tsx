@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:      { label: 'Sin iniciar',        color: 'bg-gray-100 text-gray-600' },
@@ -26,7 +26,7 @@ interface Ticket {
   id: string
   status: string
   notes?: string
-  vehicles: Vehicle
+  vehicles: Vehicle | Vehicle[]
 }
 
 interface Props {
@@ -35,7 +35,10 @@ interface Props {
 }
 
 export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
-  const supabase = createClientComponentClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
   const [tickets, setTickets] = useState<Ticket[]>(initial)
   const [loading, setLoading] = useState<string | null>(null)
 
@@ -89,7 +92,7 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
       <div className="space-y-4 max-w-lg mx-auto">
         {tickets.map(ticket => {
           const statusCfg = STATUS_CONFIG[ticket.status]
-          const v = ticket.vehicles
+          const v = Array.isArray(ticket.vehicles) ? ticket.vehicles[0] : ticket.vehicles
 
           return (
             <div key={ticket.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">

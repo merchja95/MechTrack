@@ -1,5 +1,5 @@
 // app/mechanic/page.tsx
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import MechanicBoard from '@/components/MechanicBoard'
