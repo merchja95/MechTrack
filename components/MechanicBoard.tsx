@@ -31,7 +31,7 @@ interface Ticket {
 
 interface Props {
   tickets: Ticket[]
-  mechanic: { full_name: string } | null
+  mechanic: { name: string } | null
 }
 
 export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
@@ -76,7 +76,7 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
         <div className="text-center">
           <p className="text-5xl mb-4">🎉</p>
           <p className="text-xl font-semibold text-gray-700">Sin tickets pendientes</p>
-          <p className="text-gray-400 mt-1">Hola, {mechanic?.full_name}</p>
+          <p className="text-gray-400 mt-1">Hola, {mechanic?.name}</p>
         </div>
       </div>
     )
@@ -86,7 +86,7 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
     <div className="min-h-screen bg-gray-50 p-4">
       <header className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Mis vehículos</h1>
-        <p className="text-gray-500 text-sm">Hola, {mechanic?.full_name} · {tickets.length} ticket(s)</p>
+        <p className="text-gray-500 text-sm">Hola, {mechanic?.name} · {tickets.length} ticket(s)</p>
       </header>
 
       <div className="space-y-4 max-w-lg mx-auto">
