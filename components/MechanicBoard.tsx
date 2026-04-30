@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:      { label: 'Sin iniciar',        color: 'bg-gray-100 text-gray-600' },
+  received:     { label: 'Recibido',            color: 'bg-gray-100 text-gray-600' },
   in_progress:  { label: 'En progreso',         color: 'bg-blue-100 text-blue-700' },
   waiting_part: { label: 'Esperando repuesto',  color: 'bg-yellow-100 text-yellow-700' },
   done:         { label: 'Listo',               color: 'bg-green-100 text-green-700' },
@@ -35,28 +35,19 @@ interface Props {
 }
 
 export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
   const [tickets, setTickets] = useState<Ticket[]>(initial)
   const [loading, setLoading] = useState<string | null>(null)
 
   async function updateStatus(ticketId: string, newStatus: string, ownerPhone: string, plate: string) {
     setLoading(ticketId + newStatus)
     try {
-      const { error } = await supabase
-        .from('tickets')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', ticketId)
-
-      if (error) throw error
-
-      await fetch('/api/whatsapp/notify', {
+      const res = await fetch('/api/tickets/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: ownerPhone, plate, status: newStatus }),
+        body: JSON.stringify({ ticketId, status: newStatus, phone: ownerPhone, plate }),
       })
+
+      if (!res.ok) throw new Error('Error')
 
       setTickets(prev =>
         newStatus === 'done'
