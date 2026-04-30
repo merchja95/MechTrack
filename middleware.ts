@@ -36,9 +36,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (session && isAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+    return supabaseResponse
   }
 
   return supabaseResponse
