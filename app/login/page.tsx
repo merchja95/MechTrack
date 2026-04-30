@@ -27,7 +27,22 @@ export default function LoginPage() {
       setError('Correo o contraseña incorrectos')
       setLoading(false)
     } else {
-      router.push('/dashboard')
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.role === 'mechanic') {
+          router.push('/mechanic')
+        } else {
+          router.push('/dashboard')
+        }
+      } else {
+        router.push('/dashboard')
+      }
     }
   }
 
