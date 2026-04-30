@@ -8,6 +8,7 @@ export default async function MechanicPage() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
+  
   const { data: tickets } = await supabase
     .from('tickets')
     .select(`
