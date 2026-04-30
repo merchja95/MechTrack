@@ -29,11 +29,13 @@ export default function LoginPage() {
     } else {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data: profile } = await supabase
+        const { data: profiles } = await supabase
           .from('users')
           .select('role')
           .eq('id', user.id)
-          .single()
+          .limit(1)
+
+        const profile = profiles?.[0]
 
         if (profile?.role === 'mechanic') {
           router.push('/mechanic')
