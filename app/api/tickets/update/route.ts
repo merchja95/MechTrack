@@ -9,7 +9,8 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { ticketId, status, phone, plate } = await req.json()
+    const body = await req.json()
+    const { ticketId, status, phone, plate } = body
 
     const { error } = await supabase
       .from('tickets')
