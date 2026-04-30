@@ -35,8 +35,8 @@ export default async function MechanicPage() {
   if (!userId) redirect('/login')
 
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, full_name, role')
+    .from('users')
+    .select('id, name, role')
     .eq('id', userId)
     .single()
 
