@@ -23,8 +23,8 @@ interface Ticket {
   estimated_at: string | null
   created_at: string
   mechanic_id: string | null
-  vehicles: { plate: string; brand: string; model: string; owner_name: string; owner_phone: string } | null
-  users: { name: string } | null
+  vehicles: { plate: string; brand: string; model: string; owner_name: string; owner_phone: string }[] | null
+  users: { name: string }[] | null
 }
 
 interface Mechanic {
@@ -118,7 +118,7 @@ export default function DashboardClient({
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {tickets.map(ticket => {
-                  const v = ticket.vehicles
+                  const v = Array.isArray(ticket.vehicles) ? ticket.vehicles[0] : ticket.vehicles
                   const statusInfo = STATUS_LABELS[ticket.status] ?? { label: ticket.status, color: 'bg-gray-100 text-gray-600' }
 
                   return (
