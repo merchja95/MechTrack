@@ -1,4 +1,3 @@
-// app/mechanic/page.tsx
 import { createClient } from '@supabase/supabase-js'
 import MechanicBoard from '@/components/MechanicBoard'
 
@@ -8,15 +7,16 @@ export default async function MechanicPage() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  
-  const { data: tickets } = await supabase
+  const { data: tickets, error } = await supabase
     .from('tickets')
     .select(`
-      id, status, created_at, notes,
+      id, status, created_at, notes, mechanic_id,
       vehicles ( plate, owner_name, owner_phone, model )
     `)
-    .in('status', ['pending', 'in_progress', 'waiting_part'])
+    .in('status', ['received', 'in_progress', 'waiting_part', 'pending'])
     .order('created_at', { ascending: true })
+
+  console.log('tickets:', tickets, 'error:', error)
 
   return <MechanicBoard tickets={tickets ?? []} mechanic={{ name: 'Mecánico' }} />
 }
