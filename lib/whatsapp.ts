@@ -34,9 +34,10 @@ export async function sendWhatsApp(phone: string, plate: string, event: string) 
     body: JSON.stringify(body),
   })
 
-  if (!res.ok) {
+if (!res.ok) {
     const err = await res.json()
     console.error('[WhatsApp] Error:', err)
+    return
   }
 
   return res.json()
