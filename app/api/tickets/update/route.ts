@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendWhatsApp } from '@/lib/whatsapp'
+import { sendStatusEmail } from '@/lib/email'
 import { revalidatePath } from 'next/cache'
 
 const supabase = createClient(
@@ -39,8 +40,28 @@ export async function POST(req: NextRequest) {
       .from('ticket_events')
       .insert({ ticket_id: ticketId, status })
 
+    // Obtener email del dueño del vehículo
+    const { data: ticketData } = await supabase
+      .from('tickets')
+      .select('vehicles(owner_name, owner_email)')
+      .eq('id', ticketId)
+      .single()
+
+    const vehicle = Array.isArray(ticketData?.vehicles)
+      ? ticketData.vehicles[0]
+      : ticketData?.vehicles
+
     if (phone) {
       await sendWhatsApp(phone, plate, status)
+    }
+
+    if (vehicle?.owner_email) {
+      await sendStatusEmail({
+        to: vehicle.owner_email,
+        ownerName: vehicle.owner_name ?? '',
+        plate,
+        status,
+      })
     }
 
     revalidatePath('/mechanic')
