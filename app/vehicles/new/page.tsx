@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-
 import { createBrowserClient } from '@supabase/ssr'
 
 const supabase = createBrowserClient(
@@ -22,6 +21,7 @@ export default function NewVehiclePage() {
     color: '',
     owner_name: '',
     owner_phone: '',
+    owner_email: '',
   })
   const [notes, setNotes] = useState('')
   const [estimatedAt, setEstimatedAt] = useState('')
@@ -30,13 +30,12 @@ export default function NewVehiclePage() {
   const [plateChecking, setPlateChecking] = useState(false)
   const [error, setError] = useState('')
 
-  // Autocompletar si la placa ya existe
   async function handlePlateBlur() {
     if (!form.plate || form.plate.length < 4) return
     setPlateChecking(true)
     const { data } = await supabase
       .from('vehicles')
-      .select('brand, model, year, color, owner_name, owner_phone')
+      .select('brand, model, year, color, owner_name, owner_phone, owner_email')
       .eq('plate', form.plate.toUpperCase())
       .maybeSingle()
 
@@ -68,7 +67,6 @@ export default function NewVehiclePage() {
     setLoading(true)
 
     try {
-      // 1. Obtener sesión y company_id
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('No hay sesión activa')
 
@@ -81,7 +79,6 @@ export default function NewVehiclePage() {
       if (!userData) throw new Error('Usuario no encontrado en la BD')
       const company_id = userData.company_id
 
-      // 2. Upsert del vehículo por placa
       const { data: vehicle, error: vehicleError } = await supabase
         .from('vehicles')
         .upsert(
@@ -94,6 +91,7 @@ export default function NewVehiclePage() {
             color: form.color,
             owner_name: form.owner_name,
             owner_phone: form.owner_phone,
+            owner_email: form.owner_email || null,
           },
           { onConflict: 'plate' }
         )
@@ -102,7 +100,6 @@ export default function NewVehiclePage() {
 
       if (vehicleError) throw vehicleError
 
-      // 3. Subir fotos a Supabase Storage
       const photoUrls: string[] = []
       for (const photo of photos) {
         const ext = photo.name.split('.').pop()
@@ -120,7 +117,6 @@ export default function NewVehiclePage() {
         photoUrls.push(urlData.publicUrl)
       }
 
-      // 4. Crear ticket
       const { error: ticketError } = await supabase
         .from('tickets')
         .insert({
@@ -218,11 +214,27 @@ export default function NewVehiclePage() {
                 name="owner_phone"
                 value={form.owner_phone}
                 onChange={handleChange}
-                placeholder="+57 300 000 0000"
+                placeholder="3012850364"
                 required
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
+          </div>
+
+          {/* Email dueño */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Correo electrónico del dueño <span className="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              name="owner_email"
+              type="email"
+              value={form.owner_email}
+              onChange={handleChange}
+              placeholder="juan@correo.com"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-400 mt-1">Si se ingresa, el dueño recibirá notificaciones por email en cada cambio de estado.</p>
           </div>
 
           {/* Ticket */}
