@@ -64,19 +64,11 @@ export default function DashboardClient({
 
   async function assignMechanic(ticketId: string, mechanicId: string) {
     setAssigningId(ticketId)
-    if (mechanicId) {
-      // Asignar mecánico y cambiar estado a assigned
-      await supabase
-        .from('tickets')
-        .update({ mechanic_id: mechanicId, status: 'assigned' })
-        .eq('id', ticketId)
-    } else {
-      // Desasignar — volver a received
-      await supabase
-        .from('tickets')
-        .update({ mechanic_id: null, status: 'received' })
-        .eq('id', ticketId)
-    }
+    await fetch('/api/tickets/assign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticketId, mechanicId }),
+    })
     router.refresh()
     setAssigningId(null)
   }
