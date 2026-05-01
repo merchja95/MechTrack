@@ -28,23 +28,33 @@ interface Mechanic {
 }
 
 export default function DashboardClient({
-  tickets,
+  activeTickets,
+  doneTickets,
   mechanics,
   userName,
   userRole,
 }: {
-  tickets: Ticket[]
+  activeTickets: Ticket[]
+  doneTickets: Ticket[]
   mechanics: Mechanic[]
   userName: string
   userRole: string
 }) {
   const router = useRouter()
   const [assigningId, setAssigningId] = useState<string | null>(null)
+  const [tab, setTab] = useState<'activos' | 'hoy' | 'historial'>('activos')
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
+
+  // Filtrar completados de hoy
+  const today = new Date().toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })
+  const todayDone = doneTickets.filter(t => {
+    const ticketDate = new Date(t.created_at).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })
+    return ticketDate === today
+  })
 
   async function assignMechanic(ticketId: string, mechanicId: string) {
     setAssigningId(ticketId)
@@ -60,6 +70,92 @@ export default function DashboardClient({
     await supabase.auth.signOut()
     router.push('/login')
   }
+
+  function TicketTable({ tickets, showAssign }: { tickets: Ticket[], showAssign: boolean }) {
+    if (tickets.length === 0) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+          <p className="text-gray-400">No hay tickets.</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              {['Placa', 'Vehículo', 'Dueño', 'Mecánico', 'Estado', 'Hora ingreso', 'Entrega est.'].map(h => (
+                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {tickets.map(ticket => {
+              const v = Array.isArray(ticket.vehicles) ? ticket.vehicles[0] : ticket.vehicles
+              const u = Array.isArray(ticket.users) ? ticket.users[0] : ticket.users
+              const statusInfo = STATUS_LABELS[ticket.status] ?? { label: ticket.status, color: 'bg-gray-100 text-gray-600' }
+
+              return (
+                <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 font-mono font-bold text-gray-900">{v?.plate ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{v ? `${v.brand ?? ''} ${v.model}`.trim() : '—'}</td>
+                  <td className="px-4 py-3">
+                    <div className="text-gray-900">{v?.owner_name ?? '—'}</div>
+                    <div className="text-gray-400 text-xs">{v?.owner_phone}</div>
+                  </td>
+                  <td className="px-4 py-3">
+                    {showAssign ? (
+                      <select
+                        value={ticket.mechanic_id ?? ''}
+                        onChange={e => assignMechanic(ticket.id, e.target.value)}
+                        disabled={assigningId === ticket.id}
+                        className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        <option value="">Sin asignar</option>
+                        {mechanics.map(m => (
+                          <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-gray-700 text-xs">{u?.name ?? '—'}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
+                      {statusInfo.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {new Date(ticket.created_at).toLocaleString('es-CO', {
+                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                    })}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">
+                    {ticket.estimated_at
+                      ? new Date(ticket.estimated_at).toLocaleString('es-CO', {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })
+                      : '—'}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  const tabs = [
+    { key: 'activos', label: `Activos (${activeTickets.length})` },
+    ...(userRole === 'admin' ? [
+      { key: 'hoy', label: `Completados hoy (${todayDone.length})` },
+      { key: 'historial', label: `Historial (${doneTickets.length})` },
+    ] : []),
+  ] as { key: 'activos' | 'hoy' | 'historial', label: string }[]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -85,93 +181,43 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {/* Contenido */}
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">
-            Tickets activos
-            <span className="ml-2 text-sm font-normal text-gray-400">({tickets.length})</span>
-          </h2>
+      {/* Tabs */}
+      <div className="max-w-6xl mx-auto px-6 pt-6">
+        <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
+          {tabs.map(t => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                tab === t.key
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {tickets.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-            <p className="text-gray-400">No hay tickets activos.</p>
-            <button
-              onClick={() => router.push('/vehicles/new')}
-              className="mt-4 text-blue-600 text-sm hover:underline"
-            >
-              Ingresar el primer vehículo →
-            </button>
-          </div>
-        ) : (
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  {['Placa', 'Vehículo', 'Dueño', 'Mecánico', 'Estado', 'Hora ingreso', 'Entrega est.'].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {tickets.map(ticket => {
-                  const v = Array.isArray(ticket.vehicles) ? ticket.vehicles[0] : ticket.vehicles
-                  const statusInfo = STATUS_LABELS[ticket.status] ?? { label: ticket.status, color: 'bg-gray-100 text-gray-600' }
-
-                  return (
-                    <tr key={ticket.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-4 py-3 font-mono font-bold text-gray-900">
-                        {v?.plate ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-700">
-                        {v ? `${v.brand} ${v.model}` : '—'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="text-gray-900">{v?.owner_name ?? '—'}</div>
-                        <div className="text-gray-400 text-xs">{v?.owner_phone}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={ticket.mechanic_id ?? ''}
-                          onChange={e => assignMechanic(ticket.id, e.target.value)}
-                          disabled={assigningId === ticket.id}
-                          className="border border-gray-200 rounded-md px-2 py-1 text-xs text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          <option value="">Sin asignar</option>
-                          {mechanics.map(m => (
-                            <option key={m.id} value={m.id}>{m.name}</option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                          {statusInfo.label}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
-                        {new Date(ticket.created_at).toLocaleString('es-CO', {
-                          month: 'short', day: 'numeric',
-                          hour: '2-digit', minute: '2-digit'
-                        })}
-                      </td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">
-                        {ticket.estimated_at
-                          ? new Date(ticket.estimated_at).toLocaleString('es-CO', {
-                              month: 'short', day: 'numeric',
-                              hour: '2-digit', minute: '2-digit'
-                            })
-                          : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+        {tab === 'activos' && (
+          <>
+            {activeTickets.length === 0 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-12 text-center mb-4">
+                <p className="text-gray-400">No hay tickets activos.</p>
+                <button
+                  onClick={() => router.push('/vehicles/new')}
+                  className="mt-4 text-blue-600 text-sm hover:underline"
+                >
+                  Ingresar el primer vehículo →
+                </button>
+              </div>
+            )}
+            {activeTickets.length > 0 && <TicketTable tickets={activeTickets} showAssign={true} />}
+          </>
         )}
+
+        {tab === 'hoy' && <TicketTable tickets={todayDone} showAssign={false} />}
+        {tab === 'historial' && <TicketTable tickets={doneTickets} showAssign={false} />}
       </div>
     </div>
   )
