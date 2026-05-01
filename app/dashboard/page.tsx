@@ -26,7 +26,7 @@ export default async function DashboardPage() {
       users!mechanic_id ( name )
     `)
     .eq('company_id', userData.company_id)
-    .in('status', ['received', 'in_progress', 'waiting_part'])
+    .in('status', ['received', 'assigned', 'in_progress', 'waiting_part', 'pending_delivery'])
     .order('created_at', { ascending: false })
 
   const { data: doneTickets } = await supabase
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
       users!mechanic_id ( name )
     `)
     .eq('company_id', userData.company_id)
-    .eq('status', 'done')
+    .eq('status', 'delivered')
     .order('completed_at', { ascending: false })
 
   const { data: mechanics } = await supabase
