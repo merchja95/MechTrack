@@ -13,9 +13,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { ticketId, status, phone, plate } = body
 
+    const updateData: Record<string, string | null> = { status }
+    if (status === 'done') {
+      updateData.completed_at = new Date().toISOString()
+    }
+
     const { error } = await supabase
       .from('tickets')
-      .update({ status })
+      .update(updateData)
       .eq('id', ticketId)
 
     if (error) throw error
