@@ -240,6 +240,22 @@ export default function DashboardClient({
             + Ingresar vehículo
           </button>
           {userRole === 'admin' && (
+              <button
+                onClick={() => router.push('/dashboard/metrics')}
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
+              >
+                📊 Métricas
+              </button>
+            )}
+            {userRole === 'admin' && (
+              <button
+                onClick={() => router.push('/dashboard/settings')}
+                className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
+              >
+                ⚙️ Configuración
+              </button>
+            )}
+          {userRole === 'admin' && (
             <button
               onClick={() => router.push('/dashboard/settings')}
               className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
