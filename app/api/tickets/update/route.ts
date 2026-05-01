@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendWhatsApp } from '@/lib/whatsapp'
+import { revalidatePath } from 'next/cache'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +23,8 @@ export async function POST(req: NextRequest) {
     if (phone) {
       await sendWhatsApp(phone, plate, status)
     }
+
+    revalidatePath('/mechanic')
 
     return NextResponse.json({ ok: true })
   } catch (err) {
