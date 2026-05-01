@@ -16,6 +16,7 @@ interface Ticket {
   status: string
   notes: string | null
   estimated_at: string | null
+  completed_at: string | null
   created_at: string
   mechanic_id: string | null
   vehicles: { plate: string; brand: string; model: string; owner_name: string; owner_phone: string }[] | null
@@ -49,10 +50,9 @@ export default function DashboardClient({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Filtrar completados de hoy
   const today = new Date().toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })
   const todayDone = doneTickets.filter(t => {
-    const ticketDate = new Date(t.created_at).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })
+    const ticketDate = new Date(t.completed_at ?? t.created_at).toLocaleDateString('es-CO', { timeZone: 'America/Bogota' })
     return ticketDate === today
   })
 
@@ -71,6 +71,14 @@ export default function DashboardClient({
     router.push('/login')
   }
 
+  function formatDate(dateStr: string | null) {
+    if (!dateStr) return '—'
+    return new Date(dateStr).toLocaleString('es-CO', {
+      timeZone: 'America/Bogota',
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    })
+  }
+
   function TicketTable({ tickets, showAssign }: { tickets: Ticket[], showAssign: boolean }) {
     if (tickets.length === 0) {
       return (
@@ -85,7 +93,7 @@ export default function DashboardClient({
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {['Placa', 'Vehículo', 'Dueño', 'Mecánico', 'Estado', 'Hora ingreso', 'Entrega est.'].map(h => (
+              {['Placa', 'Vehículo', 'Dueño', 'Mecánico', 'Estado', 'Ingreso', 'Entrega est.', 'Completado'].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   {h}
                 </th>
@@ -128,17 +136,13 @@ export default function DashboardClient({
                       {statusInfo.label}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {new Date(ticket.created_at).toLocaleString('es-CO', {
-                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">
-                    {ticket.estimated_at
-                      ? new Date(ticket.estimated_at).toLocaleString('es-CO', {
-                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                        })
-                      : '—'}
+                  <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(ticket.created_at)}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(ticket.estimated_at)}</td>
+                  <td className="px-4 py-3 text-xs">
+                    {ticket.completed_at
+                      ? <span className="text-green-600 font-medium">{formatDate(ticket.completed_at)}</span>
+                      : <span className="text-gray-300">—</span>
+                    }
                   </td>
                 </tr>
               )
@@ -159,7 +163,6 @@ export default function DashboardClient({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">MechTrack</h1>
@@ -181,7 +184,6 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="max-w-6xl mx-auto px-6 pt-6">
         <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-6">
           {tabs.map(t => (
@@ -200,20 +202,19 @@ export default function DashboardClient({
         </div>
 
         {tab === 'activos' && (
-          <>
-            {activeTickets.length === 0 && (
-              <div className="bg-white border border-gray-200 rounded-xl p-12 text-center mb-4">
-                <p className="text-gray-400">No hay tickets activos.</p>
-                <button
-                  onClick={() => router.push('/vehicles/new')}
-                  className="mt-4 text-blue-600 text-sm hover:underline"
-                >
-                  Ingresar el primer vehículo →
-                </button>
-              </div>
-            )}
-            {activeTickets.length > 0 && <TicketTable tickets={activeTickets} showAssign={true} />}
-          </>
+          activeTickets.length === 0 ? (
+            <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+              <p className="text-gray-400">No hay tickets activos.</p>
+              <button
+                onClick={() => router.push('/vehicles/new')}
+                className="mt-4 text-blue-600 text-sm hover:underline"
+              >
+                Ingresar el primer vehículo →
+              </button>
+            </div>
+          ) : (
+            <TicketTable tickets={activeTickets} showAssign={true} />
+          )
         )}
 
         {tab === 'hoy' && <TicketTable tickets={todayDone} showAssign={false} />}

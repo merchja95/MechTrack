@@ -18,11 +18,10 @@ export default async function DashboardPage() {
 
   if (!userData) redirect('/login')
 
-  // Tickets activos
   const { data: activeTickets } = await supabase
     .from('tickets')
     .select(`
-      id, status, notes, estimated_at, created_at, mechanic_id,
+      id, status, notes, estimated_at, completed_at, created_at, mechanic_id,
       vehicles ( plate, brand, model, owner_name, owner_phone ),
       users!mechanic_id ( name )
     `)
@@ -30,17 +29,16 @@ export default async function DashboardPage() {
     .in('status', ['received', 'in_progress', 'waiting_part'])
     .order('created_at', { ascending: false })
 
-  // Tickets completados (done)
   const { data: doneTickets } = await supabase
     .from('tickets')
     .select(`
-      id, status, notes, estimated_at, created_at, mechanic_id,
+      id, status, notes, estimated_at, completed_at, created_at, mechanic_id,
       vehicles ( plate, brand, model, owner_name, owner_phone ),
       users!mechanic_id ( name )
     `)
     .eq('company_id', userData.company_id)
     .eq('status', 'done')
-    .order('created_at', { ascending: false })
+    .order('completed_at', { ascending: false })
 
   const { data: mechanics } = await supabase
     .from('users')
