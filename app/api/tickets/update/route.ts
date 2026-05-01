@@ -14,7 +14,16 @@ export async function POST(req: NextRequest) {
     const { ticketId, status, phone, plate } = body
 
     const updateData: Record<string, string | null> = { status }
-    if (status === 'done') {
+
+    if (status === 'assigned') {
+      updateData.assigned_at = new Date().toISOString()
+    }
+
+    if (status === 'done' || status === 'pending_delivery') {
+      updateData.completed_at = new Date().toISOString()
+    }
+
+    if (status === 'delivered') {
       updateData.completed_at = new Date().toISOString()
     }
 
@@ -30,6 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     revalidatePath('/mechanic')
+    revalidatePath('/dashboard')
 
     return NextResponse.json({ ok: true })
   } catch (err) {
