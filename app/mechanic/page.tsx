@@ -15,7 +15,7 @@ export default async function MechanicPage() {
       id, status, created_at, notes, mechanic_id,
       vehicles ( plate, owner_name, owner_phone, model )
     `)
-    .in('status', ['received', 'in_progress', 'waiting_part', 'pending'])
+    .in('status', ['received', 'in_progress', 'waiting_part'])
     .order('created_at', { ascending: true })
 
   console.log('tickets:', tickets, 'error:', error)
