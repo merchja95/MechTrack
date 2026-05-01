@@ -23,7 +23,8 @@ export default async function DashboardPage() {
     .select(`
       id, status, notes, estimated_at, completed_at, created_at, mechanic_id,
       vehicles ( plate, brand, model, owner_name, owner_phone ),
-      users!mechanic_id ( name )
+      users!mechanic_id ( name ),
+      ticket_events ( status, created_at )
     `)
     .eq('company_id', userData.company_id)
     .in('status', ['received', 'assigned', 'in_progress', 'waiting_part', 'pending_delivery'])
@@ -34,7 +35,8 @@ export default async function DashboardPage() {
     .select(`
       id, status, notes, estimated_at, completed_at, created_at, mechanic_id,
       vehicles ( plate, brand, model, owner_name, owner_phone ),
-      users!mechanic_id ( name )
+      users!mechanic_id ( name ),
+      ticket_events ( status, created_at )
     `)
     .eq('company_id', userData.company_id)
     .eq('status', 'delivered')
