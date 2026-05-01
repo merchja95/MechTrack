@@ -4,17 +4,18 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  pending:      { label: 'Sin iniciar',        color: 'bg-gray-100 text-gray-600' },
-  received:     { label: 'Recibido',            color: 'bg-gray-100 text-gray-600' },
-  in_progress:  { label: 'En progreso',         color: 'bg-blue-100 text-blue-700' },
-  waiting_part: { label: 'Esperando repuesto',  color: 'bg-yellow-100 text-yellow-700' },
-  done:         { label: 'Listo',               color: 'bg-green-100 text-green-700' },
+  received:         { label: 'Recibido',              color: 'bg-gray-100 text-gray-600' },
+  assigned:         { label: 'Asignado',              color: 'bg-purple-100 text-purple-700' },
+  in_progress:      { label: 'En progreso',           color: 'bg-blue-100 text-blue-700' },
+  waiting_part:     { label: 'Esperando repuesto',    color: 'bg-yellow-100 text-yellow-700' },
+  pending_delivery: { label: 'Pendiente de entrega',  color: 'bg-orange-100 text-orange-700' },
+  delivered:        { label: 'Entregado',             color: 'bg-green-100 text-green-700' },
 }
 
 const ACTIONS = [
-  { next: 'in_progress',  label: '▶ Empecé a trabajar',    style: 'bg-blue-600 hover:bg-blue-700 text-white' },
-  { next: 'waiting_part', label: '⏸ En espera de repuesto', style: 'bg-yellow-500 hover:bg-yellow-600 text-white' },
-  { next: 'done',         label: '✓ Listo',                 style: 'bg-green-600 hover:bg-green-700 text-white' },
+  { next: 'in_progress',      label: '▶ Empecé a trabajar',       style: 'bg-blue-600 hover:bg-blue-700 text-white' },
+  { next: 'waiting_part',     label: '⏸ En espera de repuesto',   style: 'bg-yellow-500 hover:bg-yellow-600 text-white' },
+  { next: 'pending_delivery', label: '✓ Listo — pendiente entrega', style: 'bg-green-600 hover:bg-green-700 text-white' },
 ]
 
 interface Vehicle {
@@ -51,6 +52,10 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
     router.push('/login')
   }
 
+  // El ticket activo es el primero en in_progress, o si no hay, el primero assigned/received
+  const activeTicket = tickets.find(t => t.status === 'in_progress' || t.status === 'waiting_part')
+    ?? tickets[0]
+
   async function updateStatus(ticketId: string, newStatus: string, ownerPhone: string, plate: string) {
     setLoading(ticketId + newStatus)
     try {
@@ -63,7 +68,7 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
       if (!res.ok) throw new Error('Error')
 
       setTickets(prev =>
-        newStatus === 'done'
+        newStatus === 'pending_delivery'
           ? prev.filter(t => t.id !== ticketId)
           : prev.map(t => t.id === ticketId ? { ...t, status: newStatus } : t)
       )
@@ -112,14 +117,26 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
         {tickets.map(ticket => {
           const statusCfg = STATUS_CONFIG[ticket.status]
           const v = Array.isArray(ticket.vehicles) ? ticket.vehicles[0] : ticket.vehicles
+          const isActive = ticket.id === activeTicket?.id
+          const isBlocked = !isActive
 
           return (
-            <div key={ticket.id} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+            <div
+              key={ticket.id}
+              className={`bg-white rounded-2xl shadow-sm border p-5 transition-all ${
+                isBlocked ? 'border-gray-100 opacity-50' : 'border-gray-200'
+              }`}
+            >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-2xl font-bold tracking-widest text-gray-800">{v?.plate}</span>
-                <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusCfg?.color}`}>
-                  {statusCfg?.label}
-                </span>
+                <div className="flex items-center gap-2">
+                  {isBlocked && (
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">🔒 En cola</span>
+                  )}
+                  <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusCfg?.color}`}>
+                    {statusCfg?.label}
+                  </span>
+                </div>
               </div>
 
               <p className="text-sm text-gray-600 mb-1">{v?.model}</p>
@@ -131,18 +148,20 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
                 </p>
               )}
 
-              <div className="grid gap-2">
-                {ACTIONS.map(({ next, label, style }) => (
-                  <button
-                    key={next}
-                    disabled={ticket.status === next || loading !== null}
-                    onClick={() => updateStatus(ticket.id, next, v?.owner_phone, v?.plate)}
-                    className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${style} disabled:opacity-40 disabled:cursor-not-allowed`}
-                  >
-                    {loading === ticket.id + next ? 'Guardando...' : label}
-                  </button>
-                ))}
-              </div>
+              {isActive && (
+                <div className="grid gap-2">
+                  {ACTIONS.map(({ next, label, style }) => (
+                    <button
+                      key={next}
+                      disabled={ticket.status === next || loading !== null}
+                      onClick={() => updateStatus(ticket.id, next, v?.owner_phone, v?.plate)}
+                      className={`w-full py-3 rounded-xl font-semibold text-sm transition-all ${style} disabled:opacity-40 disabled:cursor-not-allowed`}
+                    >
+                      {loading === ticket.id + next ? 'Guardando...' : label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })}
