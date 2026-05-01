@@ -2,18 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { createBrowserClient } from '@supabase/ssr'
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  received:    { label: 'Recibido',     color: 'bg-gray-100 text-gray-700' },
-  in_progress: { label: 'En proceso',   color: 'bg-blue-100 text-blue-700' },
-  waiting:     { label: 'Esperando',    color: 'bg-yellow-100 text-yellow-700' },
-  done:        { label: 'Listo',        color: 'bg-green-100 text-green-700' },
+  received:     { label: 'Recibido',     color: 'bg-gray-100 text-gray-700' },
+  in_progress:  { label: 'En proceso',   color: 'bg-blue-100 text-blue-700' },
+  waiting_part: { label: 'Esperando',    color: 'bg-yellow-100 text-yellow-700' },
+  done:         { label: 'Listo',        color: 'bg-green-100 text-green-700' },
 }
 
 interface Ticket {
@@ -45,6 +40,11 @@ export default function DashboardClient({
 }) {
   const router = useRouter()
   const [assigningId, setAssigningId] = useState<string | null>(null)
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   async function assignMechanic(ticketId: string, mechanicId: string) {
     setAssigningId(ticketId)
