@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
     const vehicle = Array.isArray(ticketData?.vehicles)
       ? ticketData.vehicles[0]
       : ticketData?.vehicles
-
+    console.log('[email debug] vehicle:', vehicle)
+    console.log('[email debug] owner_email:', vehicle?.owner_email)
     if (phone) {
       await sendWhatsApp(phone, plate, status)
     }
