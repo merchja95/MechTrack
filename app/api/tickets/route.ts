@@ -10,15 +10,26 @@ const supabase = createClient(
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { vehicle_id, mechanic_id, notes } = body
+    const { vehicle_id, notes, company_id } = body
 
     const { data: ticket, error } = await supabase
       .from('tickets')
-      .insert({ vehicle_id, mechanic_id, notes, status: 'pending' })
+      .insert({
+        vehicle_id,
+        company_id,
+        notes,
+        status: 'received',
+        mechanic_id: null,
+      })
       .select()
       .single()
 
     if (error) throw error
+
+    // Registrar evento inicial
+    await supabase
+      .from('ticket_events')
+      .insert({ ticket_id: ticket.id, status: 'received' })
 
     const { data: vehicle } = await supabase
       .from('vehicles')

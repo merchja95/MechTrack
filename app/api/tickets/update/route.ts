@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
       updateData.assigned_at = new Date().toISOString()
     }
 
-    if (status === 'done' || status === 'pending_delivery') {
+    if (status === 'pending_delivery') {
       updateData.completed_at = new Date().toISOString()
     }
 
@@ -33,6 +33,11 @@ export async function POST(req: NextRequest) {
       .eq('id', ticketId)
 
     if (error) throw error
+
+    // Registrar evento
+    await supabase
+      .from('ticket_events')
+      .insert({ ticket_id: ticketId, status })
 
     if (phone) {
       await sendWhatsApp(phone, plate, status)
