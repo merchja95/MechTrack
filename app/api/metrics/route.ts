@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
   // Agrupar por mecánico
   const mechanicMap: Record<string, { name: string; count: number }> = {}
-  byMechanic?.forEach((t: any) => {
+  byMechanic?.forEach((t: { mechanic_id: string; users: { name: string } | { name: string }[] | null }) => {
     const id = t.mechanic_id
     const name = Array.isArray(t.users) ? t.users[0]?.name : t.users?.name
     if (!mechanicMap[id]) mechanicMap[id] = { name: name ?? 'Desconocido', count: 0 }
