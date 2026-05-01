@@ -23,6 +23,16 @@ interface Ticket {
   mechanic_id: string | null
   vehicles: { plate: string; brand: string; model: string; owner_name: string; owner_phone: string }[] | null
   users: { name: string }[] | null
+  ticket_events: { status: string; created_at: string }[] | null
+}
+
+function getElapsedMinutes(ticket: Ticket): number {
+  const events = ticket.ticket_events ?? []
+  const lastEvent = events
+    .filter(e => e.status === ticket.status)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+  const since = lastEvent ? new Date(lastEvent.created_at) : new Date(ticket.created_at)
+  return Math.floor((Date.now() - since.getTime()) / 60000)
 }
 
 interface Mechanic {
@@ -121,7 +131,7 @@ export default function DashboardClient({
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              {['Placa', 'Vehículo', 'Dueño', 'Mecánico', 'Estado', 'Ingreso', 'Entrega est.', 'Completado', ...(showDeliver ? ['Acción'] : [])].map(h => (
+              {['Placa', 'Vehículo', 'Dueño', 'Mecánico', 'Estado', 'Ingreso', 'Entrega est.', 'Completado', 'Tiempo', ...(showDeliver ? ['Acción'] : [])].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                   {h}
                 </th>
@@ -171,6 +181,18 @@ export default function DashboardClient({
                       ? <span className="text-green-600 font-medium">{formatDate(ticket.completed_at)}</span>
                       : <span className="text-gray-300">—</span>
                     }
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {ticket.status !== 'delivered' ? (() => {
+                      const mins = getElapsedMinutes(ticket)
+                      const isAlert = mins >= 30
+                      return (
+                        <span className={`font-medium ${isAlert ? 'text-red-600' : 'text-gray-500'}`}>
+                          {mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`}
+                          {isAlert && ' ⚠️'}
+                        </span>
+                      )
+                    })() : <span className="text-gray-300">—</span>}
                   </td>
                   {showDeliver && (
                     <td className="px-4 py-3">
