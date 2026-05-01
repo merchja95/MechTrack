@@ -46,12 +46,14 @@ export default function DashboardClient({
   mechanics,
   userName,
   userRole,
+  alertMinutes,
 }: {
   activeTickets: Ticket[]
   doneTickets: Ticket[]
   mechanics: Mechanic[]
   userName: string
   userRole: string
+  alertMinutes: number
 }) {
   const router = useRouter()
   const [assigningId, setAssigningId] = useState<string | null>(null)
@@ -185,7 +187,7 @@ export default function DashboardClient({
                   <td className="px-4 py-3 text-xs">
                     {ticket.status !== 'delivered' ? (() => {
                       const mins = getElapsedMinutes(ticket)
-                      const isAlert = mins >= 30
+                      const isAlert = mins >= alertMinutes
                       return (
                         <span className={`font-medium ${isAlert ? 'text-red-600' : 'text-gray-500'}`}>
                           {mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`}
@@ -237,6 +239,14 @@ export default function DashboardClient({
           >
             + Ingresar vehículo
           </button>
+          {userRole === 'admin' && (
+            <button
+              onClick={() => router.push('/dashboard/settings')}
+              className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"
+            >
+              ⚙️ Configuración
+            </button>
+          )}
           <button
             onClick={handleSignOut}
             className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2"

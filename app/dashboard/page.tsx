@@ -48,6 +48,12 @@ export default async function DashboardPage() {
     .eq('company_id', userData.company_id)
     .eq('role', 'mechanic')
 
+  const { data: settings } = await supabase
+    .from('company_settings')
+    .select('alert_minutes')
+    .eq('company_id', userData.company_id)
+    .single()
+
   return (
     <DashboardClient
       activeTickets={activeTickets ?? []}
@@ -55,6 +61,7 @@ export default async function DashboardPage() {
       mechanics={mechanics ?? []}
       userName={userData.name}
       userRole={userData.role}
+      alertMinutes={settings?.alert_minutes ?? 30}
     />
   )
 }
