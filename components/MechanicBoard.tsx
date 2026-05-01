@@ -1,5 +1,7 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createBrowserClient } from '@supabase/ssr'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending:      { label: 'Sin iniciar',        color: 'bg-gray-100 text-gray-600' },
@@ -37,6 +39,17 @@ interface Props {
 export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
   const [tickets, setTickets] = useState<Ticket[]>(initial)
   const [loading, setLoading] = useState<string | null>(null)
+  const router = useRouter()
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
 
   async function updateStatus(ticketId: string, newStatus: string, ownerPhone: string, plate: string) {
     setLoading(ticketId + newStatus)
@@ -63,24 +76,39 @@ export default function MechanicBoard({ tickets: initial, mechanic }: Props) {
 
   if (tickets.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-5xl mb-4">🎉</p>
-          <p className="text-xl font-semibold text-gray-700">Sin tickets pendientes</p>
-          <p className="text-gray-400 mt-1">Hola, {mechanic?.name}</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-200">
+          <div>
+            <h1 className="text-lg font-bold text-gray-800">MechTrack</h1>
+            <p className="text-xs text-gray-500">Hola, {mechanic?.name}</p>
+          </div>
+          <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">
+            Salir
+          </button>
+        </header>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-5xl mb-4">🎉</p>
+            <p className="text-xl font-semibold text-gray-700">Sin tickets pendientes</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Mis vehículos</h1>
-        <p className="text-gray-500 text-sm">Hola, {mechanic?.name} · {tickets.length} ticket(s)</p>
+    <div className="min-h-screen bg-gray-50">
+      <header className="flex items-center justify-between px-4 py-4 bg-white border-b border-gray-200 mb-6">
+        <div>
+          <h1 className="text-lg font-bold text-gray-800">MechTrack</h1>
+          <p className="text-xs text-gray-500">Hola, {mechanic?.name} · {tickets.length} ticket(s)</p>
+        </div>
+        <button onClick={handleSignOut} className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2">
+          Salir
+        </button>
       </header>
 
-      <div className="space-y-4 max-w-lg mx-auto">
+      <div className="space-y-4 max-w-lg mx-auto px-4">
         {tickets.map(ticket => {
           const statusCfg = STATUS_CONFIG[ticket.status]
           const v = Array.isArray(ticket.vehicles) ? ticket.vehicles[0] : ticket.vehicles
